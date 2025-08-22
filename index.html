@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-badge {
+            transition: all 0.2s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+        .lead-card {
+            transition: all 0.3s ease;
+        }
+        .lead-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .modal-backdrop {
+            backdrop-filter: blur(5px);
+        }
+        .chart-bar {
+            transition: all 0.5s ease;
+        }
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-users-cog text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-900">Lead Management System</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showDashboard()" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                    </button>
+                    <button onclick="exportData()" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-download text-xl"></i>
+                    </button>
+                    <button onclick="showAddLeadModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Lead
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="hidden fade-in">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Total Leads</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalLeads">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-users text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">New Leads</p>
+                            <p class="text-2xl font-bold text-gray-900" id="newLeads">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-user-plus text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Contacted</p>
+                            <p class="text-2xl font-bold text-gray-900" id="contactedLeads">0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-phone text-yellow-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Converted</p>
+                            <p class="text-2xl font-bold text-gray-900" id="convertedLeads">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-check-circle text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Status Distribution</h3>
+                <div id="statusChart" class="space-y-3">
+                    <!-- Chart will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads List Section -->
+        <div id="leadsSection">
+            <!-- Search and Filter -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="Search leads..." 
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="New">New</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Qualified">Qualified</option>
+                        <option value="Converted">Converted</option>
+                        <option value="Lost">Lost</option>
+                    </select>
+                    <select id="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="date">Sort by Date</option>
+                        <option value="name">Sort by Name</option>
+                        <option value="status">Sort by Status</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Leads Grid -->
+            <div id="leadsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Lead cards will be generated by JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">No leads found</h3>
+                <p class="text-gray-500 mb-4">Start by adding your first lead</p>
+                <button onclick="showAddLeadModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Add Lead
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Lead Modal -->
+    <div id="leadModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity modal-backdrop" onclick="closeLeadModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="leadForm" class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modalTitle">Add New Lead</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                    <input type="text" id="leadName" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                    <input type="email" id="leadEmail" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input type="tel" id="leadPhone" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                    <input type="text" id="leadCompany" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <select id="leadStatus" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="New">New</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Qualified">Qualified</option>
+                                        <option value="Converted">Converted</option>
+                                        <option value="Lost">Lost</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea id="leadNotes" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Save Lead
+                        </button>
+                        <button type="button" onclick="closeLeadModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-up Modal -->
+    <div id="followupModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity modal-backdrop" onclick="closeFollowupModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="followupForm" class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Add Follow-up</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Follow-up Type</label>
+                                    <select id="followupType" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="Call">Phone Call</option>
+                                        <option value="Email">Email</option>
+                                        <option value="Meeting">Meeting</option>
+                                        <option value="Demo">Demo</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                                    <input type="datetime-local" id="followupDate" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea id="followupNotes" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Schedule Follow-up
+                        </button>
+                        <button type="button" onclick="closeFollowupModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Details Modal -->
+    <div id="leadDetailsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity modal-backdrop" onclick="closeLeadDetailsModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="leadDetailsTitle">Lead Details</h3>
+                        <button onclick="closeLeadDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="leadDetailsContent">
+                        <!-- Lead details will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Data Management
+        let leads = JSON.parse(localStorage.getItem('leads')) || [];
+        let followups = JSON.parse(localStorage.getItem('followups')) || [];
+        let currentEditingLeadId = null;
+        let currentFollowupLeadId = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            renderLeads();
+            updateStats();
+            setupEventListeners();
+        });
+
+        // Event Listeners
+        function setupEventListeners() {
+            document.getElementById('leadForm').addEventListener('submit', handleLeadSubmit);
+            document.getElementById('followupForm').addEventListener('submit', handleFollowupSubmit);
+            document.getElementById('searchInput').addEventListener('input', filterLeads);
+            document.getElementById('statusFilter').addEventListener('change', filterLeads);
+            document.getElementById('sortBy').addEventListener('change', sortLeads);
+        }
+
+        // Lead Management Functions
+        function showAddLeadModal() {
+            currentEditingLeadId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Lead';
+            document.getElementById('leadForm').reset();
+            document.getElementById('leadModal').classList.remove('hidden');
+        }
+
+        function showEditLeadModal(leadId) {
+            currentEditingLeadId = leadId;
+            const lead = leads.find(l => l.id === leadId);
+            if (!lead) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Lead';
+            document.getElementById('leadName').value = lead.name;
+            document.getElementById('leadEmail').value = lead.email;
+            document.getElementById('leadPhone').value = lead.phone || '';
+            document.getElementById('leadCompany').value = lead.company || '';
+            document.getElementById('leadStatus').value = lead.status;
+            document.getElementById('leadNotes').value = lead.notes || '';
+            document.getElementById('leadModal').classList.remove('hidden');
+        }
+
+        function closeLeadModal() {
+            document.getElementById('leadModal').classList.add('hidden');
+            currentEditingLeadId = null;
+        }
+
+        function handleLeadSubmit(e) {
+            e.preventDefault();
+            
+            const leadData = {
+                name: document.getElementById('leadName').value,
+                email: document.getElementById('leadEmail').value,
+                phone: document.getElementById('leadPhone').value,
+                company: document.getElementById('leadCompany').value,
+                status: document.getElementById('leadStatus').value,
+                notes: document.getElementById('leadNotes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            if (currentEditingLeadId) {
+                // Update existing lead
+                const index = leads.findIndex(l => l.id === currentEditingLeadId);
+                leads[index] = { ...leads[index], ...leadData };
+                showNotification('Lead updated successfully', 'success');
+            } else {
+                // Add new lead
+                leadData.id = Date.now().toString();
+                leads.push(leadData);
+                showNotification('Lead added successfully', 'success');
+            }
+
+            saveData();
+            renderLeads();
+            updateStats();
+            closeLeadModal();
+        }
+
+        function deleteLead(leadId) {
+            if (confirm('Are you sure you want to delete this lead?')) {
+                leads = leads.filter(l => l.id !== leadId);
+                followups = followups.filter(f => f.leadId !== leadId);
+                saveData();
+                renderLeads();
+                updateStats();
+                showNotification('Lead deleted successfully', 'success');
+            }
+        }
+
+        // Follow-up Management
+        function showFollowupModal(leadId) {
+            currentFollowupLeadId = leadId;
+            document.getElementById('followupForm').reset();
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('followupDate').value = tomorrow.toISOString().slice(0, 16);
+            document.getElementById('followupModal').classList.remove('hidden');
+        }
+
+        function closeFollowupModal() {
+            document.getElementById('followupModal').classList.add('hidden');
+            currentFollowupLeadId = null;
+        }
+
+        function handleFollowupSubmit(e) {
+            e.preventDefault();
+            
+            const followupData = {
+                id: Date.now().toString(),
+                leadId: currentFollowupLeadId,
+                type: document.getElementById('followupType').value,
+                date: document.getElementById('followupDate').value,
+                notes: document.getElementById('followupNotes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            followups.push(followupData);
+            saveData();
+            closeFollowupModal();
+            showNotification('Follow-up scheduled successfully', 'success');
+        }
+
+        // Lead Details
+        function showLeadDetails(leadId) {
+            const lead = leads.find(l => l.id === leadId);
+            if (!lead) return;
+
+            const leadFollowups = followups.filter(f => f.leadId === leadId);
+            
+            const statusColors = {
+                'New': 'bg-blue-100 text-blue-800',
+                'Contacted': 'bg-yellow-100 text-yellow-800',
+                'Qualified': 'bg-green-100 text-green-800',
+                'Converted': 'bg-purple-100 text-purple-800',
+                'Lost': 'bg-red-100 text-red-800'
+            };
+
+            const detailsHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xl font-semibold">${lead.name}</h4>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[lead.status]}">${lead.status}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Email</p>
+                            <p class="font-medium">${lead.email}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Phone</p>
+                            <p class="font-medium">${lead.phone || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Company</p>
+                            <p class="font-medium">${lead.company || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Created</p>
+                            <p class="font-medium">${new Date(lead.createdAt).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    
+                    ${lead.notes ? `
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Notes</p>
+                            <p class="text-gray-900">${lead.notes}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h5 class="font-semibold">Follow-up History</h5>
+                            <button onclick="showFollowupModal('${leadId}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-plus mr-1"></i>Add Follow-up
+                            </button>
+                        </div>
+                        
+                        ${leadFollowups.length > 0 ? `
+                            <div class="space-y-2">
+                                ${leadFollowups.map(f => `
+                                    <div class="bg-gray-50 p-3 rounded-lg">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <p class="font-medium">${f.type}</p>
+                                                <p class="text-sm text-gray-600">${new Date(f.date).toLocaleString()}</p>
+                                                ${f.notes ? `<p class="text-sm text-gray-700 mt-1">${f.notes}</p>` : ''}
+                                            </div>
+                                            <button onclick="deleteFollowup('${f.id}')" class="text-red-600 hover:text-red-800">
+                                                <i class="fas fa-trash text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="text-gray-500 text-sm">No follow-ups scheduled</p>'}
+                    </div>
+                    
+                    <div class="flex justify-end space-x-2 pt-4 border-t">
+                        <button onclick="showEditLeadModal('${leadId}'); closeLeadDetailsModal();" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Edit Lead
+                        </button>
+                        <button onclick="deleteLead('${leadId}'); closeLeadDetailsModal();" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            Delete Lead
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('leadDetailsContent').innerHTML = detailsHTML;
+            document.getElementById('leadDetailsModal').classList.remove('hidden');
+        }
+
+        function closeLeadDetailsModal() {
+            document.getElementById('leadDetailsModal').classList.add('hidden');
+        }
+
+        function deleteFollowup(followupId) {
+            if (confirm('Are you sure you want to delete this follow-up?')) {
+                followups = followups.filter(f => f.id !== followupId);
+                saveData();
+                // Refresh the lead details
+                const leadId = followups.find(f => f.id === followupId)?.leadId || leads[0]?.id;
+                if (leadId) showLeadDetails(leadId);
+                showNotification('Follow-up deleted successfully', 'success');
+            }
+        }
+
+        // Rendering Functions
+        function renderLeads() {
+            const leadsGrid = document.getElementById('leadsGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (leads.length === 0) {
+                leadsGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            const statusColors = {
+                'New': 'bg-blue-100 text-blue-800',
+                'Contacted': 'bg-yellow-100 text-yellow-800',
+                'Qualified': 'bg-green-100 text-green-800',
+                'Converted': 'bg-purple-100 text-purple-800',
+                'Lost': 'bg-red-100 text-red-800'
+            };
+
+            const statusIcons = {
+                'New': 'fa-user-plus',
+                'Contacted': 'fa-phone',
+                'Qualified': 'fa-star',
+                'Converted': 'fa-check-circle',
+                'Lost': 'fa-times-circle'
+            };
+
+            leadsGrid.innerHTML = leads.map(lead => {
+                const leadFollowups = followups.filter(f => f.leadId === lead.id);
+                const upcomingFollowup = leadFollowups.find(f => new Date(f.date) > new Date());
+                
+                return `
+                    <div class="lead-card bg-white rounded-lg shadow p-6 fade-in">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">${lead.name}</h3>
+                                <p class="text-sm text-gray-600">${lead.email}</p>
+                                ${lead.company ? `<p class="text-sm text-gray-600">${lead.company}</p>` : ''}
+                            </div>
+                            <span class="status-badge px-3 py-1 rounded-full text-xs font-medium ${statusColors[lead.status]}">
+                                <i class="fas ${statusIcons[lead.status]} mr-1"></i>${lead.status}
+                            </span>
+                        </div>
+                        
+                        ${upcomingFollowup ? `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                                <p class="text-sm text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Next ${upcomingFollowup.type.toLowerCase()}: ${new Date(upcomingFollowup.date).toLocaleDateString()}
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-gray-500">
+                                ${leadFollowups.length} follow-up${leadFollowups.length !== 1 ? 's' : ''}
+                            </p>
+                            <div class="flex space-x-2">
+                                <button onclick="showFollowupModal('${lead.id}')" 
+                                        class="text-blue-600 hover:text-blue-800 transition-colors" title="Add Follow-up">
+                                    <i class="fas fa-calendar-plus"></i>
+                                </button>
+                                <button onclick="showLeadDetails('${lead.id}')" 
+                                        class="text-gray-600 hover:text-gray-800 transition-colors" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="showEditLeadModal('${lead.id}')" 
+                                        class="text-gray-600 hover:text-gray-800 transition-colors" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteLead('${lead.id}')" 
+                                        class="text-red-600 hover:text-red-800 transition-colors" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterLeads() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredLeads = leads;
+            
+            if (searchTerm) {
+                filteredLeads = filteredLeads.filter(lead => 
+                    lead.name.toLowerCase().includes(searchTerm) ||
+                    lead.email.toLowerCase().includes(searchTerm) ||
+                    (lead.company && lead.company.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            if (statusFilter) {
+                filteredLeads = filteredLeads.filter(lead => lead.status === statusFilter);
+            }
+            
+            // Temporarily replace leads array for rendering
+            const originalLeads = leads;
+            leads = filteredLeads;
+            renderLeads();
+            leads = originalLeads;
+        }
+
+        function sortLeads() {
+            const sortBy = document.getElementById('sortBy').value;
+            
+            leads.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'status':
+                        return a.status.localeCompare(b.status);
+                    case 'date':
+                    default:
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+            });
+            
+            renderLeads();
+        }
+
+        // Dashboard Functions
+        function showDashboard() {
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('leadsSection').classList.add('hidden');
+            updateStats();
+            renderChart();
+        }
+
+        function showLeadsList() {
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('leadsSection').classList.remove('hidden');
+        }
+
+        function updateStats() {
+            const stats = {
+                total: leads.length,
+                new: leads.filter(l => l.status === 'New').length,
+                contacted: leads.filter(l => l.status === 'Contacted').length,
+                converted: leads.filter(l => l.status === 'Converted').length
+            };
+            
+            document.getElementById('totalLeads').textContent = stats.total;
+            document.getElementById('newLeads').textContent = stats.new;
+            document.getElementById('contactedLeads').textContent = stats.contacted;
+            document.getElementById('convertedLeads').textContent = stats.converted;
+        }
+
+        function renderChart() {
+            const statusCounts = {
+                'New': leads.filter(l => l.status === 'New').length,
+                'Contacted': leads.filter(l => l.status === 'Contacted').length,
+                'Qualified': leads.filter(l => l.status === 'Qualified').length,
+                'Converted': leads.filter(l => l.status === 'Converted').length,
+                'Lost': leads.filter(l => l.status === 'Lost').length
+            };
+            
+            const total = leads.length;
+            const colors = {
+                'New': 'bg-blue-500',
+                'Contacted': 'bg-yellow-500',
+                'Qualified': 'bg-green-500',
+                'Converted': 'bg-purple-500',
+                'Lost': 'bg-red-500'
+            };
+            
+            const chartHTML = Object.entries(statusCounts).map(([status, count]) => {
+                const percentage = total > 0 ? (count / total * 100) : 0;
+                return `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 ${colors[status]} rounded mr-3"></div>
+                            <span class="text-sm font-medium text-gray-700">${status}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
+                                <div class="chart-bar ${colors[status]} h-2 rounded-full" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">${count}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('statusChart').innerHTML = chartHTML;
+        }
+
+        // Export Function
+        function exportData() {
+            const data = {
+                leads: leads,
+                followups: followups,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lead-management-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data exported successfully', 'success');
+        }
+
+        // Utility Functions
+        function saveData() {
+            localStorage.setItem('leads', JSON.stringify(leads));
+            localStorage.setItem('followups', JSON.stringify(followups));
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            
+            notification.className = `notification ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Check for upcoming follow-ups on page load
+        function checkUpcomingFollowups() {
+            const now = new Date();
+            const upcomingFollowups = followups.filter(f => {
+                const followupDate = new Date(f.date);
+                const timeDiff = followupDate - now;
+                return timeDiff > 0 && timeDiff <= 24 * 60 * 60 * 1000; // Within next 24 hours
+            });
+            
+            if (upcomingFollowups.length > 0) {
+                showNotification(`You have ${upcomingFollowups.length} follow-up${upcomingFollowups.length > 1 ? 's' : ''} scheduled for today/tomorrow`, 'info');
+            }
+        }
+
+        // Check follow-ups every hour
+        setInterval(checkUpcomingFollowups, 60 * 60 * 1000);
+        checkUpcomingFollowups(); // Initial check
+    </script>
+</body>
+</html>
